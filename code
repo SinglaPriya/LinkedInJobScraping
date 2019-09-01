@@ -1,0 +1,87 @@
+from selenium import webdriver
+import time
+import pandas as pd
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.keys import Keys
+
+
+def filterSearch(filtr,filterOption):
+    driver.find_element_by_xpath("//button[contains(@aria-label,'"+filtr+" filter')]").click()
+    string='Select from the following: '
+    for op in filterOption:
+        string+= '\n '+ str(filterOption.index(op)+1)+' '+op
+    
+    val=int(input(string+': \n'))
+        
+    if val-1 in range(len(filterOption)):
+        selectOpt=driver.find_element_by_xpath("//div[@id='"+filtr.split()[0].lower()+"-"+filtr.split()[1].lower()+"-facet-values']/fieldset/div/ul/li["+str(val)+"]").click()
+        driver.find_element_by_xpath("//div[@id='"+filtr.split()[0].lower()+"-"+filtr.split()[1].lower()+"-facet-values']/fieldset/div/div/div/button[2]").click()
+        time.sleep(2)
+
+
+#log in into linkedin
+
+driver= webdriver.Chrome()
+
+username= input("Enter username: ")
+password= input("Enter password: ")
+
+driver.get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin")
+
+usernameElement= driver.find_element_by_id("username") 
+passwordElement= driver.find_element_by_id("password") 
+
+usernameElement.send_keys(username)      #send username value to username field
+passwordElement.send_keys(password)      #send password value to password field
+
+driver.find_element_by_xpath("//button[text()='Sign in']").click()
+driver.execute_script('window.scrollTo(1, 500);')
+#now wait let load the comments
+time.sleep(5)
+driver.execute_script('window.scrollTo(1, 10000);')
+driver.maximize_window()
+
+from selenium.webdriver.common.keys import Keys
+searchElem=input('Enter what you want to search: ')
+searchBox=driver.find_element_by_xpath("//*[@placeholder='Search']")
+searchBox.send_keys(searchElem)
+searchBox.send_keys(Keys.ENTER)
+# searchBox.submit()
+driver.execute_script('window.scrollTo(1, 500);')
+time.sleep(5)
+driver.find_element_by_xpath("//button[@aria-label='View only Jobs results']").click()
+time.sleep(2)
+flter= input('Do you want to set any filter (Y/N): ')
+if flter=='Y':
+    datePost=input('Filter by DatePost (Y/N):')
+    if datePost=='Y':
+        filterSearch('Date Posted',['Past 24 hrs','Past week','Past month','Any time'])
+    
+    LinkedIn_feat= input('Filter by LinkedIn Feature (Y/N): ')
+    if LinkedIn_feat=='Y':
+        filterSearch('LinkedIn Features',['in your network','under 10 applicants','easy apply'])
+        
+    exp= input('Filter by Experience (Y/N) : ')
+    if exp=='Y':
+        filterSearch('Experience Level',['internship','entry level','associate','mid senior level','director','executive'])
+        
+jobFile= pd.DataFrame(columns=['job title','company','location','posted on','job description'])
+
+jobSearchResult= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__results')]")
+jobList= jobSearchResult.find_element_by_xpath("//ul[contains(@class,'jobs-search-results__list')]")
+jobList=jobList.find_elements_by_xpath("//li[contains(@class,'occludable-update')]")
+for job in jobList:
+    job.click()
+    time.sleep(2)
+    s= {}
+    jobDetail= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__details')]")
+    s['job title']= jobDetail.find_element_by_xpath("//h1[contains(@class,'jobs-details-top-card__job-title')]").text
+    s['company']=jobDetail.find_element_by_xpath("//a[contains(@class,'jobs-details-top-card__company-url')]").text
+    s['location']=jobDetail.find_element_by_xpath("//span[contains(@class,'jobs-details-top-card__bullet')]").text
+    s['posted on']=jobDetail.find_element_by_xpath("//p[contains(@class,'jobs-details-top-card__job-info')]/span").text
+    
+    s['job description']= jobDetail.find_element_by_xpath("//div[contains(@class,'jobs-description-content__text')]/span").text
+    jobFile=jobFile.append(s,ignore_index=True)
+    
+    
+jobFile.to_excel('P:/temp/linkedInJob.xlsx')
