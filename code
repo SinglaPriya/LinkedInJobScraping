@@ -68,6 +68,9 @@ try:
     if driver.find_element_by_xpath("//header/div/div[contains(@class,'jobs-search-two-pane__no-results-banner')]"):
         print("No jobs Found.")
 except:
+    #create a file to store results of scraping
+    jobFile= pd.DataFrame(columns=['job title','company','location','posted on','job description'])
+
     jobSearchResult= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__results')]")
     jobList= jobSearchResult.find_element_by_xpath("//ul[contains(@class,'jobs-search-results__list')]")
     jobList=jobList.find_elements_by_xpath("//li[contains(@class,'occludable-update')]")
