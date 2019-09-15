@@ -21,18 +21,15 @@ def filterSearch(filtr,filterOption):
 
 #log in into linkedin
 
-driver= webdriver.Chrome()
+driver= webdriver.Chrome()    #need to install chromedriver on your system acc to chrome version you have.
 
 username= input("Enter username: ")
 password= input("Enter password: ")
 
 driver.get("https://www.linkedin.com/login?trk=guest_homepage-basic_nav-header-signin")
 
-usernameElement= driver.find_element_by_id("username") 
-passwordElement= driver.find_element_by_id("password") 
-
-usernameElement.send_keys(username)      #send username value to username field
-passwordElement.send_keys(password)      #send password value to password field
+driver.find_element_by_id("username").send_keys(username)      #send username value to username field
+driver.find_element_by_id("password").send_keys(password)      #send password value to password field
 
 driver.find_element_by_xpath("//button[text()='Sign in']").click()
 driver.execute_script('window.scrollTo(1, 500);')
@@ -40,8 +37,8 @@ driver.execute_script('window.scrollTo(1, 500);')
 time.sleep(5)
 driver.execute_script('window.scrollTo(1, 10000);')
 driver.maximize_window()
+time.sleep(5)
 
-from selenium.webdriver.common.keys import Keys
 searchElem=input('Enter what you want to search: ')
 searchBox=driver.find_element_by_xpath("//*[@placeholder='Search']")
 searchBox.send_keys(searchElem)
@@ -65,23 +62,46 @@ if flter=='Y':
     if exp=='Y':
         filterSearch('Experience Level',['internship','entry level','associate','mid senior level','director','executive'])
         
-jobFile= pd.DataFrame(columns=['job title','company','location','posted on','job description'])
 
-jobSearchResult= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__results')]")
-jobList= jobSearchResult.find_element_by_xpath("//ul[contains(@class,'jobs-search-results__list')]")
-jobList=jobList.find_elements_by_xpath("//li[contains(@class,'occludable-update')]")
-for job in jobList:
-    job.click()
-    time.sleep(2)
-    s= {}
-    jobDetail= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__details')]")
-    s['job title']= jobDetail.find_element_by_xpath("//h1[contains(@class,'jobs-details-top-card__job-title')]").text
-    s['company']=jobDetail.find_element_by_xpath("//a[contains(@class,'jobs-details-top-card__company-url')]").text
-    s['location']=jobDetail.find_element_by_xpath("//span[contains(@class,'jobs-details-top-card__bullet')]").text
-    s['posted on']=jobDetail.find_element_by_xpath("//p[contains(@class,'jobs-details-top-card__job-info')]/span").text
-    
-    s['job description']= jobDetail.find_element_by_xpath("//div[contains(@class,'jobs-description-content__text')]/span").text
-    jobFile=jobFile.append(s,ignore_index=True)
-    
-    
-jobFile.to_excel('P:/temp/linkedInJob.xlsx')
+#check if there is any job result.
+try:
+    if driver.find_element_by_xpath("//header/div/div[contains(@class,'jobs-search-two-pane__no-results-banner')]"):
+        print("No jobs Found.")
+except:
+    jobSearchResult= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__results')]")
+    jobList= jobSearchResult.find_element_by_xpath("//ul[contains(@class,'jobs-search-results__list')]")
+    jobList=jobList.find_elements_by_xpath("//li[contains(@class,'occludable-update')]")
+    for job in jobList:
+        job.click()
+        time.sleep(2)
+        s= {}
+        
+        jobDetail= driver.find_element_by_xpath("//div[contains(@class,'jobs-search-two-pane__details')]")
+        
+        try:
+            s['job title']= jobDetail.find_element_by_xpath("//h1[contains(@class,'jobs-details-top-card__job-title')]").text
+        except:
+            s['job title']=""
+        try:
+            s['company']=jobDetail.find_element_by_xpath("//a[contains(@class,'jobs-details-top-card__company-url')]").text
+        except:
+            s['company']=jobDetail.find_element_by_xpath("//div[contains(@class,'jobs-details-top-card__company-info')]").text.split('\n')[1]
+        try:
+            s['location']=jobDetail.find_element_by_xpath("//span[contains(@class,'jobs-details-top-card__bullet')]").text
+        except:
+            s['location']=""
+        try:
+            s['posted on']=jobDetail.find_element_by_xpath("//p[contains(@class,'jobs-details-top-card__job-info')]/span").text
+        except:
+            s['posted on']=""
+        try:
+            s['job description']= jobDetail.find_element_by_xpath("//div[contains(@class,'jobs-description-content__text')]/span").text
+        except:
+            s['job description']=""
+
+
+        jobFile=jobFile.append(s,ignore_index=True)
+
+
+    path= input('Enter absolute path where u want to store the file:  ')
+    jobFile.to_excel(path+'linkedInJob1.xlsx')
